@@ -26,7 +26,7 @@ def integrate_2D(target_func, limits_x, limits_y, Nx=100, Ny=100):
     else:
         dtype = np.float
     
-    grid = np.ndarray(shape=(Nx, Ny), dtype=dtype)
+    grid = np.zeros(shape=(Nx, Ny), dtype=dtype)
     
     x = x_min
     for i in range(0, Nx):
@@ -51,15 +51,11 @@ def get_field(ampl_func, phase_func, limits_X, limits_Y, point, N_points, vawe_l
     k = 2 * math.pi / vawe_lambda
     
     def podyntegralnaya_funkcia(X, Y):
-        l = math.sqrt((X-x)**2 + (Y-y)**2 + z**2)
-        result = 1/(4*math.pi) * ampl_func(X,Y) * cmath.exp(1j * phase_func(X,Y) + 1j * k * l) / l * \
-                 (1j * k * z / l)
-        
-#        result = 1/(4*math.pi) * ampl_func(X,Y) * cmath.exp(1j * phase_func(X,Y) + 1j * k * l) / l * \
-#                 ( - z / l**2 + 1j * k * z / l - 1j * k)
+        result = ampl_func(X,Y) * cmath.exp(1j * phase_func(X,Y)) * cmath.exp(1j * k / (2*z) * ((X-x)**2+(Y-y)**2))
         return result
     
     E = integrate_2D(podyntegralnaya_funkcia, limits_X, limits_Y, Nx=N_points, Ny=N_points)
+    E = - 1j * k / (2*cmath.pi*z) * cmath.exp(1j*k*z) * E
     
     return abs(E), cmath.phase(E)
 
@@ -89,41 +85,41 @@ def test_integrate_2D():
         print("test failed on f = 1.0")
 
 
-def circle(X,Y):
-    R = 0.05
-    if X**2 + Y**2 < R**2:
-        return 1
-    else:
-        return 0
+
 
 N = 0    # number of integration points
-D = 0.05    # length of integration segment
+D = 0.01    # length of integration segment
             # integration area is a square
 
-L = 1
-vawe_lambda=1000e-9
-N_points = D**2 / L / vawe_lambda
+def circle(X, Y):
+    R = D / 2.0
+    if X**2 + Y**2 < R**2:
+        return 1.0
+    else:
+        return 0.0
 
-x = np.linspace(-0.5, 0.5, 300) 
-Amp = np.ndarray(x.shape) 
-ph = np.ndarray(x.shape) 
+L = 1.0   # show field on plane z=L
+vawe_lambda=600e-9
+N_points = int(D**2 / L / vawe_lambda)
+
+x = np.linspace(0.0, 0.02, 400)
+
+Amp = np.zeros(x.shape)
+ph = np.zeros(x.shape)
 
 for i in range(x.shape[0]):
     print(i)
-    Amp[i], ph[i] = get_field(circle, lambda x,y: 0, (-D/2,D/2), (-D/2,D/2), (x[i],0,L), N_points=4*int(N_points), vawe_lambda=vawe_lambda)
+    Amp[i], ph[i] = get_field(circle, lambda x,y: 0.0, (-D/2,D/2), (-D/2,D/2), (x[i],0.0,L), N_points=10*N_points, vawe_lambda=vawe_lambda)
+
 
 print(x)
 print(Amp)
-print(ph)
+# print(ph)
 
+plt.plot(x, [circle(xx, 0) for xx in x])
 plt.plot(x, Amp)
+plt.show()
 
 #test_integrate_2D()
-
-
-
-
-
-
 
 
